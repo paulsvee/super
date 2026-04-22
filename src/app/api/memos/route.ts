@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getMemoItems, getAllMemos, getUncategorizedMemos, createMemoItem } from "@/lib/memo-db";
 

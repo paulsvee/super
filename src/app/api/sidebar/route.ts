@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { getSidebarCategories } from "@/lib/todo-db";
 import { getAllFolders, getUncategorizedFolder } from "@/lib/memo-db";

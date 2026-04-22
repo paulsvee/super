@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
 import { getAllMemos } from "@/lib/memo-db";
 import { getAllPanels, getTodoItems } from "@/lib/todo-db";

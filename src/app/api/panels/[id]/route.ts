@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { updatePanel, deletePanel } from "@/lib/todo-db";
 
