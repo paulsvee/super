@@ -4,7 +4,7 @@ import fs from "fs";
 
 // todo-carousel의 DB를 직접 참조 (양방향 연동)
 const DB_PATH = process.env.VERCEL === "1"
-  ? path.join(process.cwd(), "data", "todo-carousel.db")
+  ? path.join("/tmp", "super-todo-carousel.db")
   : path.join(process.cwd(), "..", "todo-carousel", "data", "todo-carousel.db");
 
 let _db: Database.Database | null = null;

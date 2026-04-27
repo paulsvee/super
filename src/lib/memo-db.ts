@@ -5,7 +5,7 @@ import foldersSnapshot from "@/seed/one-folders.json";
 import memosSnapshot from "@/seed/one-memos.json";
 
 const DB_PATH = process.env.VERCEL === "1"
-  ? path.join(process.cwd(), "data", "one-psv.db")
+  ? path.join("/tmp", "super-one-psv.db")
   : path.join(process.cwd(), "..", "one-psv", "data", "one-psv.db");
 
 let _db: Database.Database | null = null;
