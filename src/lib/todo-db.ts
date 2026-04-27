@@ -1,15 +1,74 @@
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 
 // todo-carousel의 DB를 직접 참조 (양방향 연동)
-const DB_PATH = path.join(process.cwd(), "..", "todo-carousel", "data", "todo-carousel.db");
+const DB_PATH = process.env.VERCEL === "1"
+  ? path.join(process.cwd(), "data", "todo-carousel.db")
+  : path.join(process.cwd(), "..", "todo-carousel", "data", "todo-carousel.db");
 
 let _db: Database.Database | null = null;
 export function getTodoDB(): Database.Database {
   if (_db) return _db;
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
   _db = new Database(DB_PATH);
   _db.pragma("journal_mode = WAL");
   _db.pragma("foreign_keys = ON");
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS app_state (
+      mode TEXT PRIMARY KEY,
+      app_title TEXT NOT NULL DEFAULT '',
+      motto TEXT NOT NULL DEFAULT '',
+      active_category_id TEXT NOT NULL DEFAULT 'all',
+      expanded_panel_id TEXT,
+      collapsed_panel_ids TEXT NOT NULL DEFAULT '[]',
+      sidebar_width INTEGER NOT NULL DEFAULT 240,
+      version INTEGER NOT NULL DEFAULT 4
+    );
+
+    CREATE TABLE IF NOT EXISTS panels (
+      id TEXT PRIMARY KEY,
+      mode TEXT NOT NULL,
+      title TEXT NOT NULL,
+      color TEXT NOT NULL DEFAULT '#888888',
+      created_at INTEGER NOT NULL,
+      category_assigned_at INTEGER,
+      is_special INTEGER NOT NULL DEFAULT 0,
+      bg_image TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS panel_categories (
+      panel_id TEXT NOT NULL REFERENCES panels(id) ON DELETE CASCADE,
+      category_id TEXT NOT NULL,
+      PRIMARY KEY (panel_id, category_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS todo_items (
+      id TEXT PRIMARY KEY,
+      panel_id TEXT NOT NULL REFERENCES panels(id) ON DELETE CASCADE,
+      text TEXT NOT NULL,
+      done INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER,
+      sort_order INTEGER NOT NULL DEFAULT 0
+    );
+
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      mode TEXT NOT NULL,
+      name TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_panels_mode ON panels(mode);
+    CREATE INDEX IF NOT EXISTS idx_todo_items_panel ON todo_items(panel_id);
+    CREATE INDEX IF NOT EXISTS idx_categories_mode ON categories(mode);
+  `);
+  _db.prepare(`
+    INSERT OR IGNORE INTO app_state (mode, app_title, motto, active_category_id, sidebar_width, version)
+    VALUES ('main', 'Todo', '', 'all', 240, 4)
+  `).run();
   const todoItemColumns = _db.prepare("PRAGMA table_info(todo_items)").all() as { name: string }[];
   if (!todoItemColumns.some((column) => column.name === "updated_at")) {
     _db.exec("ALTER TABLE todo_items ADD COLUMN updated_at INTEGER");

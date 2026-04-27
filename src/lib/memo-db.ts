@@ -1,8 +1,12 @@
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import foldersSnapshot from "@/seed/one-folders.json";
+import memosSnapshot from "@/seed/one-memos.json";
 
-const DB_PATH = path.join(process.cwd(), "..", "one-psv", "data", "one-psv.db");
+const DB_PATH = process.env.VERCEL === "1"
+  ? path.join(process.cwd(), "data", "one-psv.db")
+  : path.join(process.cwd(), "..", "one-psv", "data", "one-psv.db");
 
 let _db: Database.Database | null = null;
 
@@ -11,6 +15,54 @@ function ensureColumn(db: Database.Database, table: string, column: string, defi
   if (!columns.some((item) => item.name === column)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
   }
+}
+
+function seedFromOnlineSnapshot(db: Database.Database) {
+  if (process.env.VERCEL !== "1") return;
+
+  const folderPayload = foldersSnapshot as { folders?: any[] };
+  const memoPayload = memosSnapshot as { memos?: any[] };
+  const folders = Array.isArray(folderPayload.folders)
+    ? folderPayload.folders
+    : [];
+  const memos = Array.isArray(memoPayload.memos)
+    ? memoPayload.memos
+    : [];
+
+  const insertFolder = db.prepare(`
+    INSERT OR IGNORE INTO folders (id, name, created_at, image)
+    VALUES (?, ?, ?, ?)
+  `);
+  const insertMemo = db.prepare(`
+    INSERT OR IGNORE INTO memos (id, folder_id, date, text, created_at, color, image, note, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const transaction = db.transaction(() => {
+    for (const folder of folders) {
+      insertFolder.run(
+        String(folder.id),
+        String(folder.name),
+        Number(folder.created_at ?? Date.now()),
+        folder.image ?? null
+      );
+    }
+    for (const memo of memos) {
+      insertMemo.run(
+        String(memo.id),
+        memo.folder_id ? String(memo.folder_id) : null,
+        String(memo.date),
+        String(memo.text),
+        Number(memo.created_at ?? Date.now()),
+        memo.color ?? null,
+        memo.image ?? null,
+        memo.note ?? null,
+        memo.updated_at ?? null
+      );
+    }
+  });
+
+  transaction();
 }
 
 export function getMemoDB(): Database.Database {
@@ -45,6 +97,7 @@ export function getMemoDB(): Database.Database {
   ensureColumn(_db, "memos", "image", "TEXT");
   ensureColumn(_db, "memos", "note", "TEXT");
   ensureColumn(_db, "memos", "updated_at", "INTEGER");
+  seedFromOnlineSnapshot(_db);
 
   return _db;
 }
