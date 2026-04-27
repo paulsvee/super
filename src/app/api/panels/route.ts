@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
-import { getAllPanels, createPanel, getPanelItemCount } from "@/lib/todo-db";
+import { createPanel } from "@/lib/todo-db";
+import { getRemotePanels } from "@/lib/remote-data";
 
 // GET /api/panels?categoryId=xxx
 // 전체 패널 반환 (main+dream 통합), categoryId 있으면 필터링
@@ -8,18 +9,8 @@ import { getAllPanels, createPanel, getPanelItemCount } from "@/lib/todo-db";
 export async function GET(req: NextRequest) {
   try {
     const categoryId = req.nextUrl.searchParams.get("categoryId");
-    const panels = getAllPanels();
-
-    const filtered = categoryId
-      ? panels.filter((p) => p.categoryIds.includes(categoryId))
-      : panels;
-
-    const result = filtered.map((p) => ({
-      ...p,
-      itemCount: getPanelItemCount(p.id),
-    }));
-
-    return NextResponse.json({ panels: result });
+    const panels = await getRemotePanels(categoryId);
+    return NextResponse.json({ panels });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }

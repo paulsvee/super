@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
-import { getTodoItems, createTodoItem } from "@/lib/todo-db";
+import { createTodoItem } from "@/lib/todo-db";
+import { getRemoteTodoItems } from "@/lib/remote-data";
 
 export async function GET(_: NextRequest, { params }: { params: { id: string } }) {
   try {
-    const items = getTodoItems(params.id);
+    const items = await getRemoteTodoItems(params.id);
     return NextResponse.json({ items });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });

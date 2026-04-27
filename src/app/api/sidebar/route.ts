@@ -1,23 +1,14 @@
 export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
-import { getSidebarCategories } from "@/lib/todo-db";
-import { getAllFolders, getUncategorizedFolder } from "@/lib/memo-db";
+import { getRemoteMemoFolders, getRemoteSidebarCategories } from "@/lib/remote-data";
 
 export async function GET() {
   try {
-    const categories = getSidebarCategories();
-    const memoFolders = getAllFolders();
-    const uncategorizedFolder = getUncategorizedFolder();
-
-    const sortedMemoFolders = [...memoFolders, ...(uncategorizedFolder ? [uncategorizedFolder] : [])].sort(
-      (a, b) =>
-        ((b.latestAt ?? b.createdAt) - (a.latestAt ?? a.createdAt)) ||
-        (b.createdAt - a.createdAt) ||
-        a.name.localeCompare(b.name, "ko") ||
-        a.id.localeCompare(b.id)
-    );
-
-    return NextResponse.json({ categories, memoFolders: sortedMemoFolders });
+    const [categories, memoFolders] = await Promise.all([
+      getRemoteSidebarCategories(),
+      getRemoteMemoFolders(),
+    ]);
+    return NextResponse.json({ categories, memoFolders });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
