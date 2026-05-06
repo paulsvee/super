@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Super PSV",
+  title: "폴스비 Super PSV",
   description: "슈퍼 메모장 — Todo + Memo 통합",
 };
 
